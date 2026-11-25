@@ -1,3 +1,23 @@
+# autoswitch (Desktop-compatible fork)
+
+This is a fork of [ilyesarf/autoswitch](https://github.com/ilyesarf/autoswitch) with one fix: in Claude Code
+Desktop and other SDK/headless sessions, `$.session.compact()` is refused, so a downgrade with a large context
+failed with "compaction failed" and stayed on the stronger model. This fork falls back to running `/compact`
+through `$.command.run` and only switches once a compaction has actually gone through.
+
+Install:
+
+```
+/plugin marketplace add Netdoodle/autoswitch
+/plugin install autoswitch@autoswitch-desktop
+```
+
+or from a shell: `claude plugin marketplace add Netdoodle/autoswitch && claude plugin install autoswitch@autoswitch-desktop`
+
+The original README follows.
+
+---
+
 # autoswitch
 
 I keep forgetting to switch models. I don't need Opus 5.5 to write docs; Sonnet is good enough.

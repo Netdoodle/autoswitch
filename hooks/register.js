@@ -311,6 +311,10 @@ async function needsCompaction($, target, threshold) {
   }
 }
 
+// Bumped by the session.compact hook each time a compaction stands, so a /compact run through
+// $.command.run can be checked: its result says nothing about whether it compacted.
+let compactions = 0
+
 // 'yes' or 'failed: <reason>', so the reason is never silent.
 async function compactNow($) {
   try {
@@ -318,7 +322,15 @@ async function compactNow($) {
     // A hook vetoed it; the context is still as large as it was.
     return res?.skip ? 'failed: ' + res.skip : 'yes'
   } catch (err) {
-    return 'failed: ' + String(err?.message ?? err)
+    // Headless and SDK sessions (the desktop app among them) refuse $.session.compact, but a
+    // /compact command runs there. [local patch]
+    const before = compactions
+    try {
+      await $.command.run({ command: 'compact' })
+    } catch (err2) {
+      return 'failed: ' + String(err?.message ?? err) + '; /compact: ' + String(err2?.message ?? err2)
+    }
+    return compactions > before ? 'yes (via /compact)' : 'failed: /compact ran but did not compact'
   }
 }
 
@@ -334,7 +346,7 @@ async function clearIfDropped($, text) {
 async function compactThenResend($, text, previous, target, why) {
   await clearIfDropped($, text)
   lastCompaction = await compactNow($)
-  if (lastCompaction === 'yes') {
+  if (lastCompaction.startsWith('yes')) {
     current = target
     $.ui.toast(`autoswitch → ${target} (${why}, compacted)`)
   } else {
@@ -388,6 +400,13 @@ export function register(on, options) {
     // Don't hold up the session; switching starts once the ladder is known.
     discover($, false).then(use, () => {})
     return next(e)
+  })
+
+  // Count compactions that stand, whoever asked for them; see compactNow. [local patch]
+  on('session.compact', async ($, e, next) => {
+    const res = await next(e)
+    if (res && !res.skip && e.trigger !== 'precompute') compactions++
+    return res
   })
 
   on('command.run', { command: 'autoswitch' }, async ($, e) => {

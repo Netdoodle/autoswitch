@@ -1,7 +1,7 @@
 {
   "name": "autoswitch",
-  "version": "0.8.0",
-  "description": "Picks a model for each prompt by rating its difficulty, so you don't have to /model by hand",
+  "version": "0.8.0-desktop.1",
+  "description": "Picks a model for each prompt by rating its difficulty, so you don't have to /model by hand (fork: compaction works in Claude Code Desktop and other SDK sessions)",
   "author": {
     "name": "esc"
   },
